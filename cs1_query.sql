@@ -82,3 +82,25 @@ FROM menu m JOIN sales s ON m.product_id = s.product_id
 JOIN members ms ON ms.customer_id = s.customer_id
 WHERE order_date <= '2021-01-31'
 GROUP BY customer_id;
+
+#BONUS
+#Recreate the following table output using the available data
+SELECT s.customer_id, s.order_date, m.product_name, m.price, CASE
+WHEN s.order_date >= ms.join_date THEN 'Y' ELSE 'N' END as member
+FROM menu m JOIN sales s ON m.product_id = s.product_id
+JOIN members ms ON s.customer_id = ms.customer_id
+ORDER BY s.customer_id, s.order_date;
+
+#Danny also requires further information about the ranking of customer products, 
+#but he purposely does not need the ranking for non-member purchases so he expects 
+#null ranking values for the records when customers are not yet part of the loyalty program.
+
+SELECT a.*, CASE WHEN a.member = 'N' THEN 'null'
+ELSE RANK() OVER(PARTITION BY a.customer_id, a.member ORDER BY a.order_date ASC)  
+END  as ranking
+FROM 
+(SELECT s.customer_id, s.order_date, m.product_name, m.price, CASE
+WHEN s.order_date >= ms.join_date THEN 'Y' ELSE 'N' END as member
+FROM menu m JOIN sales s ON m.product_id = s.product_id
+LEFT JOIN members ms ON s.customer_id = ms.customer_id
+ORDER BY s.customer_id, s.order_date) as a;
